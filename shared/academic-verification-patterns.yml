@@ -1,0 +1,174 @@
+# Academic Reference Verification Patterns
+
+## API_Rate_Limits
+CrossRef:
+  Endpoint: "https://api.crossref.org/works/{doi}"
+  Requests_Per_Second: 50
+  Polite_Pool: true
+  User_Agent_Required: true
+  Headers: "User-Agent: RefVerifier/1.0 (mailto:user@example.com)"
+  Priority: 1
+
+Semantic_Scholar:
+  Endpoint: "https://api.semanticscholar.org/v1/paper/{id}"
+  Requests_Per_5Min: 100
+  Auth_Required: false
+  Priority: 2
+
+arXiv_API:
+  Endpoint: "http://export.arxiv.org/api/query"
+  Request_Interval_Seconds: 3
+  Batch_Max: 50
+  Priority: 3
+
+## BibTeX_Required_Fields
+Entry_Types:
+  article: [title, author, year, journal]
+  inproceedings: [title, author, year, booktitle]
+  book: [title, author, year, publisher]
+  misc: [title, year]
+  phdthesis: [title, author, year, school]
+  techreport: [title, author, year, institution]
+
+Optional_Fields: [doi, url, arxiv_id, volume, number, pages, month, note]
+
+## Similarity_Thresholds
+Title:
+  Red_Below: 0.60
+  Yellow_Below: 0.90
+  Green_Above: 0.90
+
+Author_Count_Diff:
+  Red_Above: 0.50
+  Yellow_Above: 0.20
+
+Year_Diff:
+  Red_Above: 2
+  Yellow_Above: 1
+
+## arXiv_ID_Patterns
+Formats:
+  New_Format: "^\\d{4}\\.\\d{4,5}(v\\d+)?$"
+  Old_Format: "^[a-z-]+/\\d{7}(v\\d+)?$"
+Examples:
+  New: "2301.12345v2"
+  Old: "cs/0012001"
+
+## Verification_Workflow
+Steps:
+  - name: "Parse_BibTeX"
+    action: "解析输入文件→提取条目→规范化字段"
+  - name: "Validate_Structure"
+    action: "检查必需字段→验证格式→检测重复"
+  - name: "Query_CrossRef"
+    action: "DOI查询→元数据比对→相似度计算"
+  - name: "Query_Semantic_Scholar"
+    action: "备选验证→补充元数据→交叉确认"
+  - name: "Query_arXiv"
+    action: "预印本验证→版本检查→格式验证"
+  - name: "Check_URLs"
+    action: "URL可达性→状态码检查→重定向跟踪"
+  - name: "Detect_Anomalies"
+    action: "异常检测→标记分类→风险评估"
+  - name: "Generate_Report"
+    action: "统计汇总→问题列表→修复建议"
+
+## Anomaly_Flags
+Red_Critical:
+  - "DOI_Not_Found: DOI在CrossRef中不存在"
+  - "Author_Mismatch: 作者数量差异>50%"
+  - "Year_Mismatch: 年份差异>2年"
+  - "Title_Low_Similarity: 标题相似度<60%"
+  - "arXiv_Invalid: arXiv ID格式无效"
+  - "Self_Cite_Author_Mismatch: 自引作者名不一致"
+
+Yellow_Warning:
+  - "No_DOI: 非arXiv论文缺少DOI"
+  - "URL_Error: URL返回非200状态"
+  - "Title_Minor_Diff: 标题有微小差异(60-90%)"
+  - "Venue_Abbrev: 期刊名使用缩写"
+  - "Missing_Optional: 缺少可选字段"
+
+Green_Verified:
+  - "DOI_Verified: DOI通过CrossRef验证"
+  - "Fields_Complete: 所有必需字段存在"
+  - "Metadata_Match: 元数据与源匹配"
+
+## EMNLP_2026_Project
+Citation_Format: "Markdown嵌入BibTeX块"
+Priority_Markers:
+  Must_Cite: "★★★"
+  Optional: "★★"
+
+Self_Citation_Keys:
+  vulcabench2025:
+    name: "VULCA-Bench"
+    description: "视觉-语言文化评价基准"
+  vulca2025:
+    name: "VULCA Framework"
+    description: "VULCA评估框架"
+  fire_imagery2025:
+    name: "火意象研究"
+    description: "中国文化火意象语义分析"
+  art_critique2026:
+    name: "Art Critique"
+    description: "艺术批评能力评测"
+
+Author_Variants:
+  - "Yu, Haorui"
+  - "Haorui Yu"
+  - "H. Yu"
+  - "Yu, H."
+
+L1_L5_Attribution: "VULCA-Bench框架"
+
+## Report_Templates
+Header: |
+  # 文献验证报告
+  生成时间: {timestamp}
+  目标文件: {file_path}
+
+Statistics_Table: |
+  ## 统计概览
+  | 指标 | 数值 |
+  |------|------|
+  | 总条目 | {total} |
+  | ✅ 已验证 | {verified} |
+  | ⚠ 警告 | {warnings} |
+  | 🚨 错误 | {errors} |
+
+Critical_Section: |
+  ## 🚨 关键问题
+  {issues}
+
+Warning_Section: |
+  ## ⚠ 警告
+  {warnings}
+
+Verified_Section: |
+  ## ✅ 已验证条目
+  {entries}
+
+Recommendations_Section: |
+  ## 修复建议
+  {recommendations}
+
+## Deliverables_Paths
+Reports: ".claudedocs/refs/verification-{timestamp}.md"
+Metrics: ".claudedocs/refs/metrics-{date}.json"
+Fix_Log: ".claudedocs/refs/fixes-{timestamp}.md"
+
+## String_Similarity_Methods
+Recommended:
+  - name: "Levenshtein"
+    use_case: "短文本精确匹配"
+  - name: "Jaccard"
+    use_case: "词袋相似度"
+  - name: "Cosine"
+    use_case: "长文本语义相似"
+
+Normalization:
+  - "lowercase"
+  - "remove_punctuation"
+  - "strip_whitespace"
+  - "expand_abbreviations"
